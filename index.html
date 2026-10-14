@@ -413,12 +413,14 @@ setTimeout(()=>{$('#ld').classList.add('off');try{sessionStorage.setItem('ld',1)
 $('#bg').onclick=()=>R.classList.toggle('mo');$('#mn').onclick=e=>{if(e.target.closest('a'))R.classList.remove('mo')};
 
 const sl=t=>String(t||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-async function loadManifest(){
- try{const r=await fetch('proyectos.json',{cache:'no-cache'});if(!r.ok)return;const M=await r.json();if(!M.projects||!M.projects.length)return;
-  [...M.projects].reverse().forEach(m=>{const k=sl(m.folder);const p=D.projects.find(x=>sl(x.folder||x.title)===k);
-   if(p){p.folder=m.folder;if(m.imgs.length)p.imgs=m.imgs;['title','cat','desc','link'].forEach(f=>{if(m[f])p[f]=m[f]})}
-   else D.projects.unshift({id:'m_'+k,folder:m.folder,title:m.title,cat:m.cat||'',desc:m.desc||'',link:m.link||'',imgs:m.imgs,auto:1})});
-  build()}catch(_){}}
+async function loadManifest(){let msg='No se encontró proyectos.json: revisa que Pages esté en "GitHub Actions" y que el workflow haya terminado sin errores';
+ try{const r=await fetch('proyectos.json',{cache:'no-cache'});
+  if(r.ok){const M=await r.json(),L=M.projects||[];msg='proyectos.json OK: '+L.length+' proyecto(s)'+(L.length?' → '+L.map(m=>m.folder+' ('+m.imgs.length+' fotos)').join(', '):' (Proyectos/ no tiene imágenes)');
+   if(L.length){[...L].reverse().forEach(m=>{const k=sl(m.folder);const p=D.projects.find(x=>sl(x.folder||x.title)===k);
+    if(p){p.folder=m.folder;if(m.imgs.length)p.imgs=m.imgs;['title','cat','desc','link'].forEach(f=>{if(m[f])p[f]=m[f]})}
+    else D.projects.unshift({id:'m_'+k,folder:m.folder,title:m.title,cat:m.cat||'',desc:m.desc||'',link:m.link||'',imgs:m.imgs,auto:1})});build()}}
+  else msg+=' (HTTP '+r.status+')'}catch(e){msg+=' ('+e.message+')'}
+ if(location.hash==='#diag')alert(msg)}
 loadManifest();
 $('#adm').onclick=()=>{const on=document.body.classList.toggle('ed');$('#adm').textContent=on?'✓ Salir de edición':'✎ Editar proyectos'};
 $('#adm').hidden=location.hash!=='#admin';addEventListener('hashchange',()=>{$('#adm').hidden=location.hash!=='#admin'});

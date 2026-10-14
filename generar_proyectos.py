@@ -10,7 +10,7 @@ Lo ejecuta GitHub Actions en cada subida; tambien puedes correrlo a mano: python
 import json, os, re, subprocess
 from urllib.parse import quote
 
-EXT = ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif')
+EXT = ('.jpg', '.jpeg', '.jfif', '.png', '.webp', '.gif', '.avif', '.svg')
 
 def nat(s):
     return [int(x) if x.isdigit() else x.lower() for x in re.split(r'(\d+)', s)]
@@ -32,8 +32,15 @@ else:
         d = os.path.join(root, name)
         if name.startswith('.') or not os.path.isdir(d):
             continue
-        files = sorted([f for f in os.listdir(d) if f.lower().endswith(EXT) and not f.startswith('.')], key=nat)
+        files = []
+        for dp, dns, fns in os.walk(d):
+            dns[:] = [x for x in dns if not x.startswith('.')]
+            for f in fns:
+                if f.lower().endswith(EXT) and not f.startswith('.'):
+                    files.append(os.path.relpath(os.path.join(dp, f), d).replace(os.sep, '/'))
+        files.sort(key=nat)
         if not files:
+            print('Aviso: la carpeta "%s" no tiene imagenes (jpg, png, webp...)' % name)
             continue
         info = {}
         ip = os.path.join(d, 'info.json')
@@ -49,7 +56,7 @@ else:
             'cat': g('categoria', 'cat'),
             'desc': g('descripcion', 'desc'),
             'link': g('link', 'behance'),
-            'imgs': ['%s/%s/%s' % (quote(root), quote(name), quote(f)) for f in files],
+            'imgs': ['/'.join([quote(root), quote(name)] + [quote(x) for x in f.split('/')]) for f in files],
             't': first_commit_ts(d),
         })
         print('%-30s %3d fotos' % (name, len(files)))

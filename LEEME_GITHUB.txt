@@ -26,3 +26,10 @@ CONSEJOS
 - Imagenes de ~1 MB o menos (JPG/WEBP) para que la pagina cargue rapido.
 - Desde el navegador GitHub deja subir unos 100 archivos por vez; si son muchos, sube en tandas.
 - Si algo no aparece, revisa la pestana Actions: una X roja indica el error.
+
+SI UN PROYECTO NO APARECE
+1) Abre  https://TU-USUARIO.github.io/NOMBRE-REPO/proyectos.json  en el navegador.
+   - Si lista tu carpeta: la generacion funciona; recarga la pagina con Ctrl+Shift+R.
+   - Si da error 404: falta el workflow, o Pages no esta en "GitHub Actions", o el workflow fallo (pestana Actions).
+2) Abre tu sitio con  /#diag  al final (ej. https://.../NOMBRE-REPO/#diag): muestra un aviso con lo que encontro.
+3) Ojo: el enlace de Claude (claude.ai/artifact/...) NO lee la carpeta Proyectos de GitHub; solo tu sitio de github.io.
