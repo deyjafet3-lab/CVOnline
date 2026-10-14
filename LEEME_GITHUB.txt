@@ -1,23 +1,28 @@
-ACTUALIZAR TU PORTAFOLIO EN GITHUB (con la carpeta proyectos/)
+PORTAFOLIO EN GITHUB PAGES - proyectos automaticos desde la carpeta Proyectos/
 
-Estructura del repositorio:
-  index.html
-  generar_proyectos.py
-  proyectos/
-     ennova-brand/foto1.jpg, foto2.jpg ...
-     otro-proyecto/...
+CONFIGURACION (una sola vez)
+1) En la RAIZ del repositorio deben quedar estos archivos:
+      index.html
+      generar_proyectos.py
+      .github/workflows/publicar.yml
+      Proyectos/            (tus carpetas de proyectos)
+   Si al arrastrar la carpeta ".github" no se sube, usa: Add file > Create new file,
+   escribe el nombre  .github/workflows/publicar.yml  y pega el contenido del archivo.
+   (Si ya tenias editado tu index.html, copia antes tu bloque <script id="data"...> al nuevo.)
+2) Settings > Pages > Build and deployment > Source: elige  GitHub Actions.
+3) El repositorio debe ser publico (Pages gratis).
 
-1) IMPORTANTE: si ya agregaste/editaste proyectos en el index.html que tienes en GitHub,
-   antes de reemplazarlo copia tu bloque <script id="data" type="application/json">...</script>
-   y pegalo en el index.html nuevo (el formato es compatible).
-2) Sube/reemplaza index.html (y generar_proyectos.py) en el repositorio.
-3) Para que cada carpeta de proyectos/ aparezca con todas sus fotos:
-   - Descarga el repositorio en tu PC (o abre una terminal en la carpeta del proyecto) y ejecuta:
-         python generar_proyectos.py
-   - Sube el index.html resultante a GitHub (Add file > Upload files > Commit changes).
-   El script conserva titulo, categoria, descripcion y link de Behance de lo que ya existe,
-   solo actualiza las fotos y agrega las carpetas nuevas.
-4) Despues edita titulo/categoria/descripcion/link abriendo tu sitio con /#admin al final.
+USO DIARIO (sin tocar index.html)
+- Add file > Upload files, arrastra la carpeta nueva dentro de Proyectos/ y Commit changes.
+- Espera 1-2 minutos (puedes ver el avance en la pestana Actions). El proyecto aparece solo,
+  con TODAS las imagenes de la carpeta, sin importar como se llamen (se ordenan por nombre;
+  la primera es la portada). El titulo sale del nombre de la carpeta.
 
-Nombre de fotos: se ordenan por nombre (foto1, foto2, ... foto10); la primera es la portada.
-Tip: usa minusculas y sin espacios en carpetas y archivos para evitar problemas en GitHub Pages.
+OPCIONAL: titulo, categoria, descripcion y link de Behance
+- Pon un archivo  info.json  dentro de la carpeta del proyecto:
+      {"titulo": "Ennova Brand", "categoria": "Branding", "descripcion": "Texto...", "link": "https://www.behance.net/gallery/..."}
+
+CONSEJOS
+- Imagenes de ~1 MB o menos (JPG/WEBP) para que la pagina cargue rapido.
+- Desde el navegador GitHub deja subir unos 100 archivos por vez; si son muchos, sube en tandas.
+- Si algo no aparece, revisa la pestana Actions: una X roja indica el error.

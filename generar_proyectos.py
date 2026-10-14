@@ -1,63 +1,60 @@
 #!/usr/bin/env python3
-"""Lee la carpeta proyectos/ y actualiza la lista de fotos de cada proyecto en index.html.
+"""Genera proyectos.json a partir de la carpeta Proyectos/ (mayusculas o minusculas).
 
-Uso (en la carpeta donde estan index.html y proyectos/):
-    python generar_proyectos.py
-
-- Cada subcarpeta de proyectos/ es un proyecto; sus imagenes (jpg, png, webp, gif, avif)
-  se ordenan por nombre (foto1, foto2, ... foto10) y la primera es la portada.
-- Si el proyecto ya existe en index.html (mismo nombre de carpeta o mismo titulo),
-  conserva su titulo, categoria, descripcion y link de Behance; solo actualiza las fotos.
-- Si es nuevo, lo agrega con el nombre de la carpeta como titulo.
+Cada subcarpeta = un proyecto. Se toman TODAS las imagenes (jpg, png, webp, gif, avif),
+sin importar como se llamen, ordenadas por nombre (la primera es la portada).
+Opcional: dentro de la carpeta puedes poner info.json:
+    {"titulo": "Ennova Brand", "categoria": "Branding", "descripcion": "...", "link": "https://www.behance.net/..."}
+Lo ejecuta GitHub Actions en cada subida; tambien puedes correrlo a mano: python generar_proyectos.py
 """
-import json, os, re, sys, unicodedata
+import json, os, re, subprocess
 from urllib.parse import quote
 
-INDEX = sys.argv[1] if len(sys.argv) > 1 else 'index.html'
-ROOT = 'proyectos'
 EXT = ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif')
-
-def slug(t):
-    t = unicodedata.normalize('NFKD', str(t)).encode('ascii', 'ignore').decode().lower()
-    return re.sub(r'[^a-z0-9]+', '-', t).strip('-')
 
 def nat(s):
     return [int(x) if x.isdigit() else x.lower() for x in re.split(r'(\d+)', s)]
 
-html = open(INDEX, encoding='utf-8').read()
-m = re.search(r'(<script id="data" type="application/json">)(.*?)(</script>)', html, re.S)
-if not m:
-    sys.exit('No encontre <script id="data"> en ' + INDEX)
-D = json.loads(m.group(2))
-P = D.setdefault('projects', [])
-by = {}
-for p in P:
-    by[slug(p.get('folder') or p.get('title', ''))] = p
+def first_commit_ts(path):
+    try:
+        out = subprocess.run(['git', 'log', '--diff-filter=A', '--format=%ct', '--', path],
+                             capture_output=True, text=True, timeout=60).stdout.split()
+        return int(out[-1]) if out else 0
+    except Exception:
+        return 0
 
-if not os.path.isdir(ROOT):
-    sys.exit('No existe la carpeta ' + ROOT + '/ junto a ' + INDEX)
+root = next((d for d in sorted(os.listdir('.')) if d.lower() == 'proyectos' and os.path.isdir(d)), None)
+projects = []
+if not root:
+    print('Aviso: no encontre la carpeta Proyectos/. Se genera un proyectos.json vacio.')
+else:
+    for name in sorted(os.listdir(root), key=nat):
+        d = os.path.join(root, name)
+        if name.startswith('.') or not os.path.isdir(d):
+            continue
+        files = sorted([f for f in os.listdir(d) if f.lower().endswith(EXT) and not f.startswith('.')], key=nat)
+        if not files:
+            continue
+        info = {}
+        ip = os.path.join(d, 'info.json')
+        if os.path.isfile(ip):
+            try:
+                info = json.load(open(ip, encoding='utf-8-sig'))
+            except Exception as e:
+                print('Aviso: info.json invalido en', name, e)
+        g = lambda *k: next((str(info[x]).strip() for x in k if info.get(x)), '')
+        projects.append({
+            'folder': name,
+            'title': g('titulo', 'title') or re.sub(r'[-_]+', ' ', name).strip().title(),
+            'cat': g('categoria', 'cat'),
+            'desc': g('descripcion', 'desc'),
+            'link': g('link', 'behance'),
+            'imgs': ['%s/%s/%s' % (quote(root), quote(name), quote(f)) for f in files],
+            't': first_commit_ts(d),
+        })
+        print('%-30s %3d fotos' % (name, len(files)))
+    projects.sort(key=lambda p: (-p['t'], nat(p['folder'])))
 
-nuevos = actualizados = 0
-for name in sorted(os.listdir(ROOT), key=nat):
-    d = os.path.join(ROOT, name)
-    if not os.path.isdir(d):
-        continue
-    files = sorted([f for f in os.listdir(d) if f.lower().endswith(EXT)], key=nat)
-    if not files:
-        continue
-    imgs = ['%s/%s/%s' % (ROOT, quote(name), quote(f)) for f in files]
-    p = by.get(slug(name))
-    if p:
-        actualizados += 1
-    else:
-        p = {'id': int.from_bytes(name.encode()[:6], 'big'), 'title': re.sub(r'[-_]+', ' ', name).strip().title(),
-             'cat': '', 'desc': '', 'link': ''}
-        P.insert(0, p)
-        nuevos += 1
-    p['folder'] = name
-    p['imgs'] = imgs
-    print('%-28s %2d fotos' % (name, len(imgs)))
-
-out = json.dumps(D, ensure_ascii=False).replace('<', '\\u003c')
-open(INDEX, 'w', encoding='utf-8').write(html[:m.start(2)] + out + html[m.end(2):])
-print('Listo: %d nuevos, %d actualizados.' % (nuevos, actualizados))
+with open('proyectos.json', 'w', encoding='utf-8') as f:
+    json.dump({'projects': projects}, f, ensure_ascii=False, indent=1)
+print('proyectos.json listo con %d proyecto(s).' % len(projects))
